@@ -1,0 +1,27 @@
+{
+    "version": 2,
+    "framework": null,
+    "buildCommand": "npm run build && mkdir -p .vercel_static/build && cp -r public/build/* .vercel_static/build/ && cp public/favicon.ico .vercel_static/ 2>/dev/null; cp public/robots.txt .vercel_static/ 2>/dev/null; true",
+    "outputDirectory": ".vercel_static",
+    "functions": {
+        "api/index.php": {
+            "runtime": "vercel-php@0.9.0"
+        }
+    },
+    "routes": [
+        {
+            "src": "/build/(.*)",
+            "headers": {
+                "Cache-Control": "public, max-age=31536000, immutable"
+            },
+            "continue": true
+        },
+        {
+            "handle": "filesystem"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/api/index.php"
+        }
+    ]
+}

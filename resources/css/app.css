@@ -1,0 +1,23 @@
+@import 'tailwindcss';
+
+@source '../js/**/*.vue';
+@source '../js/**/*.ts';
+
+@theme {
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-serif: 'Playfair Display', Georgia, 'Times New Roman', serif;
+
+    /* Navy palette */
+    --color-navy-950: #0B1120;
+    --color-navy-900: #0F172A;
+    --color-navy-800: #1A2340;
+    --color-navy-700: #243054;
+    --color-navy-600: #2E3D68;
+
+    /* Gold palette */
+    --color-gold-600: #B8922F;
+    --color-gold-500: #D4A843;
+    --color-gold-400: #E0BD5C;
+    --color-gold-300: #EBD48A;
+}
