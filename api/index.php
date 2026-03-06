@@ -7,6 +7,11 @@
  * Auto-migrates SQLite on cold start.
  */
 
+// Enable error reporting for debugging
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
+
 // 1. Ensure ALL writable directories exist in /tmp FIRST
 $tmpDirs = [
     '/tmp/storage',
