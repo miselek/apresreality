@@ -19,7 +19,6 @@ $tmpDirs = [
     '/tmp/storage/framework/sessions',
     '/tmp/storage/framework/views',
     '/tmp/storage/logs',
-    '/tmp/bootstrap-cache',
 ];
 
 foreach ($tmpDirs as $dir) {
@@ -29,18 +28,12 @@ foreach ($tmpDirs as $dir) {
 }
 
 // 2. Set environment variables BEFORE Laravel boots
-//    Redirect all writable paths to /tmp (filesystem is read-only on Vercel)
+//    Redirect writable paths to /tmp (filesystem is read-only on Vercel)
 $envOverrides = [
     'VIEW_COMPILED_PATH' => '/tmp/storage/framework/views',
     'LOG_CHANNEL' => 'stderr',
     'CACHE_STORE' => 'array',
     'SESSION_DRIVER' => 'cookie',
-    // Redirect bootstrap cache so Laravel doesn't try to read/write in read-only project dir
-    'APP_PACKAGES_CACHE' => '/tmp/bootstrap-cache/packages.php',
-    'APP_SERVICES_CACHE' => '/tmp/bootstrap-cache/services.php',
-    'APP_CONFIG_CACHE' => '/tmp/bootstrap-cache/config.php',
-    'APP_ROUTES_CACHE' => '/tmp/bootstrap-cache/routes-v7.php',
-    'APP_EVENTS_CACHE' => '/tmp/bootstrap-cache/events.php',
 ];
 
 foreach ($envOverrides as $key => $value) {
@@ -52,6 +45,7 @@ foreach ($envOverrides as $key => $value) {
 // 3. Auto-migrate SQLite on cold start
 $dbPath = getenv('DB_DATABASE') ?: '/tmp/database.sqlite';
 $needsMigration = false;
+
 if (getenv('DB_CONNECTION') === 'sqlite') {
     if (!file_exists($dbPath)) {
         touch($dbPath);
@@ -67,8 +61,11 @@ if (getenv('DB_CONNECTION') === 'sqlite') {
         }
     }
 }
+
 if ($needsMigration) {
-    if (!file_exists($dbPath)) touch($dbPath);
+    if (!file_exists($dbPath)) {
+        touch($dbPath);
+    }
 
     define('LARAVEL_START', microtime(true));
     require __DIR__ . '/../vendor/autoload.php';
@@ -83,7 +80,7 @@ if ($needsMigration) {
     // Handle the web request
     $app->handleRequest(\Illuminate\Http\Request::capture());
     return;
-} // end needsMigration
+}
 
 // 4. Normal request handling
 require __DIR__ . '/../public/index.php';
