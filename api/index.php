@@ -25,6 +25,7 @@ try {
         '/tmp/storage/framework/sessions',
         '/tmp/storage/framework/views',
         '/tmp/storage/logs',
+        '/tmp/bootstrap-cache',
     ];
 
     foreach ($tmpDirs as $dir) {
@@ -33,12 +34,25 @@ try {
         }
     }
 
-    // 2. Set environment variables BEFORE Laravel boots
+    // 2. Copy packages.php to writable /tmp (so Laravel can also write services.php next to it)
+    $srcPackages = __DIR__ . '/../bootstrap/cache/packages.php';
+    $dstPackages = '/tmp/bootstrap-cache/packages.php';
+    if (file_exists($srcPackages) && !file_exists($dstPackages)) {
+        copy($srcPackages, $dstPackages);
+    }
+
+    // 3. Set environment variables BEFORE Laravel boots
     $envOverrides = [
         'VIEW_COMPILED_PATH' => '/tmp/storage/framework/views',
         'LOG_CHANNEL' => 'stderr',
         'CACHE_STORE' => 'array',
         'SESSION_DRIVER' => 'cookie',
+        // Redirect bootstrap cache to writable /tmp (project dir is read-only on Vercel)
+        'APP_PACKAGES_CACHE' => '/tmp/bootstrap-cache/packages.php',
+        'APP_SERVICES_CACHE' => '/tmp/bootstrap-cache/services.php',
+        'APP_CONFIG_CACHE' => '/tmp/bootstrap-cache/config.php',
+        'APP_ROUTES_CACHE' => '/tmp/bootstrap-cache/routes-v7.php',
+        'APP_EVENTS_CACHE' => '/tmp/bootstrap-cache/events.php',
     ];
 
     foreach ($envOverrides as $key => $value) {
@@ -47,7 +61,7 @@ try {
         $_SERVER[$key] = $value;
     }
 
-    // 3. Auto-migrate SQLite on cold start
+    // 4. Auto-migrate SQLite on cold start
     $dbPath = getenv('DB_DATABASE') ?: '/tmp/database.sqlite';
     $needsMigration = false;
 
@@ -83,7 +97,7 @@ try {
         return;
     }
 
-    // 4. Normal request handling
+    // 5. Normal request handling
     require __DIR__ . '/../public/index.php';
 
 } catch (\Throwable $e) {
