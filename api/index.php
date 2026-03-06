@@ -51,8 +51,24 @@ foreach ($envOverrides as $key => $value) {
 
 // 3. Auto-migrate SQLite on cold start
 $dbPath = getenv('DB_DATABASE') ?: '/tmp/database.sqlite';
-if (getenv('DB_CONNECTION') === 'sqlite' && !file_exists($dbPath)) {
-    touch($dbPath);
+$needsMigration = false;
+if (getenv('DB_CONNECTION') === 'sqlite') {
+    if (!file_exists($dbPath)) {
+        touch($dbPath);
+        $needsMigration = true;
+    } else {
+        // Check if DB has tables (might be empty from a failed previous cold start)
+        try {
+            $pdo = new PDO('sqlite:' . $dbPath);
+            $result = $pdo->query("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='migrations'");
+            $needsMigration = ($result->fetchColumn() == 0);
+        } catch (\Exception $e) {
+            $needsMigration = true;
+        }
+    }
+}
+if ($needsMigration) {
+    if (!file_exists($dbPath)) touch($dbPath);
 
     define('LARAVEL_START', microtime(true));
     require __DIR__ . '/../vendor/autoload.php';
@@ -67,7 +83,7 @@ if (getenv('DB_CONNECTION') === 'sqlite' && !file_exists($dbPath)) {
     // Handle the web request
     $app->handleRequest(\Illuminate\Http\Request::capture());
     return;
-}
+} // end needsMigration
 
 // 4. Normal request handling
 require __DIR__ . '/../public/index.php';
