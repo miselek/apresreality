@@ -3,11 +3,11 @@
 /**
  * Vercel Serverless Entry Point for Laravel
  *
- * Bootstraps Laravel in a serverless environment.
- * On cold starts with SQLite, auto-runs migrations + seed.
+ * Sets up writable /tmp paths before Laravel boots.
+ * Auto-migrates SQLite on cold start.
  */
 
-// Ensure writable directories exist in /tmp
+// 1. Ensure ALL writable directories exist in /tmp FIRST
 $tmpDirs = [
     '/tmp/storage',
     '/tmp/storage/app',
@@ -19,6 +19,7 @@ $tmpDirs = [
     '/tmp/storage/framework/sessions',
     '/tmp/storage/framework/views',
     '/tmp/storage/logs',
+    '/tmp/bootstrap-cache',
 ];
 
 foreach ($tmpDirs as $dir) {
@@ -27,23 +28,40 @@ foreach ($tmpDirs as $dir) {
     }
 }
 
-// Auto-migrate SQLite on cold start
+// 2. Set environment variables BEFORE Laravel boots
+//    so config files read /tmp paths via env()
+$envOverrides = [
+    'VIEW_COMPILED_PATH' => '/tmp/storage/framework/views',
+    'LOG_CHANNEL' => 'stderr',
+    'CACHE_STORE' => 'array',
+    'SESSION_DRIVER' => 'cookie',
+];
+
+foreach ($envOverrides as $key => $value) {
+    putenv("$key=$value");
+    $_ENV[$key] = $value;
+    $_SERVER[$key] = $value;
+}
+
+// 3. Auto-migrate SQLite on cold start
 $dbPath = getenv('DB_DATABASE') ?: '/tmp/database.sqlite';
 if (getenv('DB_CONNECTION') === 'sqlite' && !file_exists($dbPath)) {
     touch($dbPath);
 
-    // Bootstrap Laravel for artisan commands
     define('LARAVEL_START', microtime(true));
     require __DIR__ . '/../vendor/autoload.php';
     $app = require_once __DIR__ . '/../bootstrap/app.php';
 
+    // Override storage path to /tmp
+    $app->useStoragePath('/tmp/storage');
+
     $kernel = $app->make(\Illuminate\Contracts\Console\Kernel::class);
     $kernel->call('migrate', ['--force' => true, '--seed' => true]);
 
-    // Handle the actual web request
+    // Handle the web request
     $app->handleRequest(\Illuminate\Http\Request::capture());
     return;
 }
 
-// Normal request handling
+// 4. Normal request handling
 require __DIR__ . '/../public/index.php';
