@@ -4,6 +4,10 @@
 # Build frontend
 npm run build
 
+# Remove all bootstrap cache files (may contain references to dev packages)
+# Laravel will regenerate what it needs at runtime
+rm -f bootstrap/cache/packages.php bootstrap/cache/services.php bootstrap/cache/config.php bootstrap/cache/routes-v7.php bootstrap/cache/events.php
+
 # Generate clean packages.php without dev dependencies
 # (dev packages like pail, sail, collision are removed by Vercel's --no-dev)
 cat > bootstrap/cache/packages.php << 'PHPEOF'
