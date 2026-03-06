@@ -41,12 +41,17 @@ try {
         copy($srcPackages, $dstPackages);
     }
 
-    // 3. Set environment variables BEFORE Laravel boots
+    // 3. Force HTTPS (Vercel proxies to PHP over HTTP internally)
+    $_SERVER['HTTPS'] = 'on';
+    $_SERVER['SERVER_PORT'] = 443;
+
+    // 4. Set environment variables BEFORE Laravel boots
     $envOverrides = [
         'VIEW_COMPILED_PATH' => '/tmp/storage/framework/views',
         'LOG_CHANNEL' => 'stderr',
         'CACHE_STORE' => 'array',
         'SESSION_DRIVER' => 'cookie',
+        'ASSET_URL' => 'https://apresreality.vercel.app',
         // Redirect bootstrap cache to writable /tmp (project dir is read-only on Vercel)
         'APP_PACKAGES_CACHE' => '/tmp/bootstrap-cache/packages.php',
         'APP_SERVICES_CACHE' => '/tmp/bootstrap-cache/services.php',
