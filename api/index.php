@@ -28,22 +28,19 @@ foreach ($tmpDirs as $dir) {
     }
 }
 
-// 2. Clear cached package manifest (dev packages like pail are not installed on Vercel)
-$bootstrapCache = __DIR__ . '/../bootstrap/cache';
-foreach (['packages.php', 'services.php'] as $cacheFile) {
-    $path = $bootstrapCache . '/' . $cacheFile;
-    if (file_exists($path)) {
-        @unlink($path);
-    }
-}
-
-// 3. Set environment variables BEFORE Laravel boots
-//    so config files read /tmp paths via env()
+// 2. Set environment variables BEFORE Laravel boots
+//    Redirect all writable paths to /tmp (filesystem is read-only on Vercel)
 $envOverrides = [
     'VIEW_COMPILED_PATH' => '/tmp/storage/framework/views',
     'LOG_CHANNEL' => 'stderr',
     'CACHE_STORE' => 'array',
     'SESSION_DRIVER' => 'cookie',
+    // Redirect bootstrap cache so Laravel doesn't try to read/write in read-only project dir
+    'APP_PACKAGES_CACHE' => '/tmp/bootstrap-cache/packages.php',
+    'APP_SERVICES_CACHE' => '/tmp/bootstrap-cache/services.php',
+    'APP_CONFIG_CACHE' => '/tmp/bootstrap-cache/config.php',
+    'APP_ROUTES_CACHE' => '/tmp/bootstrap-cache/routes-v7.php',
+    'APP_EVENTS_CACHE' => '/tmp/bootstrap-cache/events.php',
 ];
 
 foreach ($envOverrides as $key => $value) {
@@ -52,7 +49,7 @@ foreach ($envOverrides as $key => $value) {
     $_SERVER[$key] = $value;
 }
 
-// 4. Auto-migrate SQLite on cold start
+// 3. Auto-migrate SQLite on cold start
 $dbPath = getenv('DB_DATABASE') ?: '/tmp/database.sqlite';
 if (getenv('DB_CONNECTION') === 'sqlite' && !file_exists($dbPath)) {
     touch($dbPath);
@@ -72,5 +69,5 @@ if (getenv('DB_CONNECTION') === 'sqlite' && !file_exists($dbPath)) {
     return;
 }
 
-// 5. Normal request handling
+// 4. Normal request handling
 require __DIR__ . '/../public/index.php';
