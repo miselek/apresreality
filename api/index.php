@@ -28,7 +28,16 @@ foreach ($tmpDirs as $dir) {
     }
 }
 
-// 2. Set environment variables BEFORE Laravel boots
+// 2. Clear cached package manifest (dev packages like pail are not installed on Vercel)
+$bootstrapCache = __DIR__ . '/../bootstrap/cache';
+foreach (['packages.php', 'services.php'] as $cacheFile) {
+    $path = $bootstrapCache . '/' . $cacheFile;
+    if (file_exists($path)) {
+        @unlink($path);
+    }
+}
+
+// 3. Set environment variables BEFORE Laravel boots
 //    so config files read /tmp paths via env()
 $envOverrides = [
     'VIEW_COMPILED_PATH' => '/tmp/storage/framework/views',
@@ -43,7 +52,7 @@ foreach ($envOverrides as $key => $value) {
     $_SERVER[$key] = $value;
 }
 
-// 3. Auto-migrate SQLite on cold start
+// 4. Auto-migrate SQLite on cold start
 $dbPath = getenv('DB_DATABASE') ?: '/tmp/database.sqlite';
 if (getenv('DB_CONNECTION') === 'sqlite' && !file_exists($dbPath)) {
     touch($dbPath);
@@ -63,5 +72,5 @@ if (getenv('DB_CONNECTION') === 'sqlite' && !file_exists($dbPath)) {
     return;
 }
 
-// 4. Normal request handling
+// 5. Normal request handling
 require __DIR__ . '/../public/index.php';
