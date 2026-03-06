@@ -1,7 +1,7 @@
 {
     "version": 2,
     "framework": null,
-    "buildCommand": "rm -f bootstrap/cache/packages.php bootstrap/cache/services.php && npm run build && mkdir -p .vercel_static/build && cp -r public/build/* .vercel_static/build/ && cp public/favicon.ico .vercel_static/ 2>/dev/null; cp public/robots.txt .vercel_static/ 2>/dev/null; true",
+    "buildCommand": "bash build.sh",
     "outputDirectory": ".vercel_static",
     "functions": {
         "api/index.php": {
